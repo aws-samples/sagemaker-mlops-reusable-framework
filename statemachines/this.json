@@ -1,0 +1,598 @@
+{
+    "Comment": "Start Step Function Pipeline",
+    "StartAt": "Try",
+    "States": {
+        "Try": {
+            "Type": "Parallel",
+            "Branches": [
+               
+                {
+                "StartAt": "Pre-Processing Job Type",
+                "States": {
+                    "Pre-Processing Job Type": {
+                        "Type": "Choice",
+                        "Choices": [{
+                                "Variable": "$.preprocessing.job_type",
+                                "StringEquals": "lambda",
+                                "Next": "Execute preprocessing lambda"
+                            },
+                            {
+                                "Variable": "$.preprocessing.job_type",
+                                "StringEquals": "glue-python",
+                                "Next": "Execute preprocessing Glue Python Shell"
+                            },
+                            {
+                                "Variable": "$.preprocessing.job_type",
+                                "StringEquals": "glue-spark",
+                                "Next": "Execute preprocessing Glue Spark"
+                            },
+                            {
+                                "Variable": "$.preprocessing.job_type",
+                                "StringEquals": "sagemaker-processing",
+                                "Next": "Execute preprocessing SageMaker Processing"
+                            }
+ 
+                        ],
+                        "Default": "SageMaker -Training Job step choice step"
+                    },
+                    "Execute preprocessing lambda": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::lambda:invoke",
+                        "Parameters": {
+                            "Payload.$": "$",
+                            "FunctionName.$": "$.preprocessing.job_name"
+                        },
+                        "Comment": "Execute Lambda function ",
+                        "Next": "SageMaker -Training Job step choice step",
+                        "ResultPath": "$.preprocessing_results",
+                        "Retry": [{
+                            "ErrorEquals": [
+                                "Lambda.ServiceException",
+                                "Lambda.AWSLambdaException",
+                                "Lambda.SdkClientException"
+                            ],
+                            "IntervalSeconds": 2,
+                            "MaxAttempts": 3,
+                            "BackoffRate": 2
+                        }]
+                    },
+                    "Execute preprocessing Glue Python Shell": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::glue:startJobRun.sync",
+                        "Parameters": {
+                            "JobName.$": "$.preprocessing.job_name",
+                            "Arguments": {
+                                "--consumption_pipeline_name.$": "$.consumption_pipeline_name",
+                                "--event.$": "States.JsonToString($)",
+                                "--dataset_date.$": "$.dataset_date",
+                                "--JDBCURL.$": "$.JDBCURL",
+                                "--table.$": "$.table",
+                                "--secret_id.$": "$.secret_id",
+                                "--PARQUET_PATH.$": "$.PARQUET_PATH",
+                                "--env.$": "$.env",
+                                "--acc_id.$": "$.acc_id",
+                                "--region.$": "$.region",
+                                "--app.$": "$.app"
+                            }
+                        },
+                        "Comment": "Pipeline",
+                        "Next": "SageMaker -Training Job step choice step",
+                        "ResultPath": "$.preprocessing_results",
+                        "Retry": [{
+                            "ErrorEquals": [
+                                "States.ALL"
+                            ],
+                            "IntervalSeconds": 1,
+                            "MaxAttempts": 0
+                        }]
+                    },
+                    "Execute preprocessing Glue Spark": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::glue:startJobRun.sync",
+                        "Parameters": {
+                            "JobName.$": "$.preprocessing.job_name",
+                            "NumberOfWorkers.$": "$.preprocessing.number_of_dpu_job",
+                            "WorkerType.$": "$.preprocessing.worker_type_job",
+                            "Arguments": {
+                                "--consumption_pipeline_name.$": "$.consumption_pipeline_name",
+                                "--event.$": "States.JsonToString($)",
+                                "--dataset_date.$": "$.dataset_date",
+                                "--JDBCURL.$": "$.JDBCURL",
+                                "--table.$": "$.table",
+                                "--secret_id.$": "$.secret_id",
+                                "--PARQUET_PATH.$": "$.PARQUET_PATH",
+                                "--env.$": "$.env",
+                                "--acc_id.$": "$.acc_id",
+                                "--region.$": "$.region",
+                                "--app.$": "$.app"
+                            }
+                        },
+                        "Comment": "Pipeline",
+                        "Next": "SageMaker -Training Job step choice step",
+                        "ResultPath": "$.preprocessing_results",
+                        "Retry": [{
+                            "ErrorEquals": [
+                                "States.ALL"
+                            ],
+                            "IntervalSeconds": 5,
+                            "MaxAttempts": 1
+                        }]
+                    },
+                    "Execute preprocessing SageMaker Processing": {
+                        "Type": "Task",
+                        "ResultPath": "$.preprocessing_results",
+                        "Next": "SageMaker -Training Job step choice step",
+                        "Resource": "arn:aws:states:::sagemaker:createProcessingJob.sync",
+                        "Parameters": {
+                            "ProcessingJobName.$": "$.preprocessing.job_name",
+                            
+                            "ProcessingInputs": [
+                                {
+                                    "InputName": "code",
+                                    "AppManaged": false,
+                                    "S3Input": {
+                                        "S3Uri.$": "$.preprocessing.source_code_path",
+                                        "LocalPath": "/opt/ml/processing/input/code",
+                                        "S3DataType": "S3Prefix",
+                                       "S3InputMode": "File",
+                                        "S3DataDistributionType": "FullyReplicated",
+                                        "S3CompressionType": "None"
+                                    }
+                                },
+                                {
+                                    "InputName": "entrypoint",
+                                    "AppManaged": false,
+                                    "S3Input": {
+                                        "S3Uri.$": "$.preprocessing.entrypoint_path",
+                                        "LocalPath": "/opt/ml/processing/input/entrypoint",
+                                        "S3DataType": "S3Prefix",
+                                        "S3InputMode": "File",
+                                        "S3DataDistributionType": "FullyReplicated",
+                                        "S3CompressionType": "None"
+                                    }
+                                }
+                            ],
+                            "ProcessingOutputConfig": {
+                                "Outputs": [
+                                    {
+                                        "OutputName": "train_data",
+                                        "AppManaged": false,
+                                        "S3Output": {
+                                            "S3Uri.$": "$.preprocessing.output_train_data_path",
+                                            "LocalPath": "/opt/ml/processing/train",
+                                            "S3UploadMode": "EndOfJob"
+                                        }
+                                    },
+                                    {
+                                        "OutputName": "test_data",
+                                        "AppManaged": false,
+                                        "S3Output": {
+                                            "S3Uri.$": "$.preprocessing.output_test_data_path",
+                                            "LocalPath": "/opt/ml/processing/test",
+                                            "S3UploadMode": "EndOfJob"
+                                        }
+                                    },
+                                    {
+                                        "OutputName": "result_data",
+                                        "AppManaged": false,
+                                        "S3Output": {
+                                            "S3Uri.$": "$.preprocessing.output_result_data_path",
+                                            "LocalPath": "/opt/ml/processing/output",
+                                            "S3UploadMode": "EndOfJob"
+                                        }
+                                    }
+                                ]
+                            },
+                            "AppSpecification": {
+                                "ImageUri.$": "$.preprocessing.image_url",
+                                "ContainerArguments.$": "$.preprocessing.container_argument",
+                                "ContainerEntrypoint.$": "$.preprocessing.container_entrypoint"
+                            },
+                            "RoleArn.$": "$.sagemaker_role_arn",
+                            "ProcessingResources": {
+                                "ClusterConfig": {
+                                    "InstanceCount": 1,
+                                    "InstanceType.$": "$.preprocessing.instance_type",
+                                    "VolumeSizeInGB": 30
+                                }
+                            },
+                            "StoppingCondition": {
+                                "MaxRuntimeInSeconds": 7200
+                            }
+                        }
+ 
+                    },
+                        "SageMaker -Training Job step choice step": {
+                            "Type": "Choice",
+                            "Choices": [
+                                {
+                                    "Variable": "$.training_job",
+                                    "StringEquals": "Y",
+                                    "Next": "SageMaker - Training Step"
+                                }
+                            ],
+                            "Default": "SageMaker -Hyperparameter Tuning step choice step"
+                        },
+                        "SageMaker - Training Step": {
+                            "Resource": "arn:aws:states:::sagemaker:createTrainingJob.sync",
+                            "Parameters": {
+                                "TrainingJobName.$": "$.training.job_name",
+                                "HyperParameters.$": "$.training.hyperparameters",
+                                "AlgorithmSpecification": {
+                                    "TrainingImage.$": "$.training.image_url",
+                                    "TrainingInputMode": "File",
+                                    "MetricDefinitions.$": "$.training.metricdefinitions"
+                                },
+                                "OutputDataConfig": {
+                                    "S3OutputPath.$": "$.training.output_path"
+                                },
+                                "StoppingCondition": {
+                                    "MaxRuntimeInSeconds": 86400
+                                },
+                                "ResourceConfig": {
+                                    "InstanceCount": 1,
+                                    "InstanceType.$": "$.training.instance_type",
+                                    "VolumeSizeInGB": 30
+                                },
+                                "RoleArn.$": "$.sagemaker_role_arn",
+                                "InputDataConfig": [
+                                    {
+                                        "DataSource": {
+                                            "S3DataSource": {
+                                                "S3DataType": "S3Prefix",
+                                                "S3Uri.$": "$.preprocessing.output_train_data_path",
+                                                "S3DataDistributionType": "FullyReplicated"
+                                            }
+                                        },
+                                        "ContentType": "text/csv",
+                                        "ChannelName": "train"
+                                    },
+                                    {
+                                        "DataSource": {
+                                            "S3DataSource": {
+                                                "S3DataType": "S3Prefix",
+                                                "S3Uri.$": "$.preprocessing.output_test_data_path",
+                                                "S3DataDistributionType": "FullyReplicated"
+                                            }
+                                        },
+                                        "ContentType": "text/csv",
+                                        "ChannelName": "test"
+                                    }
+                                ],
+                               
+            
+                                "DebugHookConfig": {
+                                    "S3OutputPath.$": "$.training.output_path"
+                                }
+                            },
+                            "Type": "Task",
+                            "ResultPath": "$.training_results",
+                            "Next": "SageMaker -Hyperparameter Tuning step choice step"
+                        },
+                    "SageMaker -Hyperparameter Tuning step choice step": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.tuning_job",
+                                "StringEquals": "Y",
+                                "Next": "SageMaker - Tuning Step"
+                            }
+                        ],
+                        "Default": "SageMaker -Create Model step choice step"
+                    },
+                    "SageMaker - Tuning Step": {
+                        "Resource": "arn:aws:states:::sagemaker:createHyperParameterTuningJob.sync",
+                        "Parameters": {
+ 
+                           "HyperParameterTuningJobName.$": "$.tuning.job_name",
+                           "HyperParameterTuningJobConfig": {
+                               "Strategy": "Bayesian",
+                               "HyperParameterTuningJobObjective.$": "$.tuning.hyperparametejobobjective",
+                               "ResourceLimits": {
+                                   "MaxNumberOfTrainingJobs": 10,
+                                   "MaxParallelTrainingJobs": 5
+                               },
+                               "ParameterRanges.$": "$.tuning.parameterranges"
+                           },
+                           "TrainingJobDefinition": {
+                               "AlgorithmSpecification": {
+                                   "TrainingImage.$": "$.training.image_url",
+                                   "TrainingInputMode": "File",
+                                   "MetricDefinitions.$": "$.tuning.metricdefinitions"
+                               },
+                               "OutputDataConfig": {
+                                   "S3OutputPath.$": "$.tuning.output_path"
+                               },
+                               "StoppingCondition": {
+                                   "MaxRuntimeInSeconds": 86400
+                               },
+                               "ResourceConfig": {
+                                   "InstanceCount": 1,
+                                   "InstanceType.$": "$.tuning.instance_type",
+                                   "VolumeSizeInGB": 30
+                               },
+                               "RoleArn.$": "$.sagemaker_role_arn",
+                               "InputDataConfig": [
+                                   {
+                                       "DataSource": {
+                                           "S3DataSource": {
+                                               "S3DataDistributionType": "FullyReplicated",
+                                               "S3DataType": "S3Prefix",
+                                               "S3Uri.$": "$.preprocessing.output_train_data_path"
+                                           }
+                                       },
+                                       "ChannelName": "train",
+                                       "ContentType": "text/csv"
+                                   },
+                                   {
+                                       "DataSource": {
+                                           "S3DataSource": {
+                                               "S3DataDistributionType": "FullyReplicated",
+                                               "S3DataType": "S3Prefix",
+                                               "S3Uri.$": "$.preprocessing.output_test_data_path"
+                                           }
+                                       },
+                                       "ChannelName": "test",
+                                       "ContentType": "text/csv"
+                                   }
+                               ],
+                               "StaticHyperParameters.$": "$.tuning.statichyperparameters"
+                           
+                           }
+          
+                            
+                        },
+                        "Type": "Task",
+                        "ResultPath": "$.tuning_results",
+                        "Next": "SageMaker -Create Model step choice step"
+                    },
+                    
+                    "SageMaker -Create Model step choice step": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.create_model",
+                                "StringEquals": "Y",
+                                "Next": "SageMaker - Create Model"
+                            }
+                        ],
+                        "Default": "SageMaker -Batch Transform step choice step"
+                    },
+                    "SageMaker - Create Model": {
+                        "Resource": "arn:aws:states:::sagemaker:createModel",
+                        "Parameters": {
+                            "ExecutionRoleArn.$": "$.sagemaker_role_arn",
+                            "ModelName.$": "$.model_para.model_name",
+                            "PrimaryContainer": {
+                                "ModelDataUrl.$": "$.training_results.ModelArtifacts.S3ModelArtifacts",
+                                "Image.$": "$.training.image_url",
+                                "Environment.$": "$.model_para.environment"}
+                                   
+                        },
+                        "Type": "Task",
+                        "ResultPath": "$.model_results",
+                        "Next": "SageMaker -Batch Transform step choice step"
+                    },
+                    "SageMaker -Batch Transform step choice step": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.transform_job",
+                                "StringEquals": "Y",
+                                "Next": "SageMaker - Batch Transform"
+                            }
+                        ],
+                        "Default": "SageMaker -Endpoint Config step choice step"
+                    },
+                    "SageMaker - Batch Transform": {
+                        "Resource": "arn:aws:states:::sagemaker:createTransformJob.sync",
+                        "Parameters": {
+ 
+                            "ModelName.$": "$.model_para.model_name",
+                            "TransformInput": {
+                                "SplitType": "Line",
+                                "CompressionType": "None",
+                                "ContentType": "text/csv",
+                                "DataSource": {
+                                    "S3DataSource": {
+                                        "S3DataType": "S3Prefix",
+                                        "S3Uri.$": "$.preprocessing.output_test_data_path"
+                                    }
+                                }
+                            },
+                            "TransformOutput": {
+                                "S3OutputPath.$": "$.tansform_para.output" ,
+                                "AssembleWith": "Line",
+                                "Accept": "text/csv"
+                            },
+                            "DataProcessing": {
+                                "InputFilter": "$[1:]"
+                            },
+                            "TransformResources": {
+                                "InstanceCount": 1,
+                                "InstanceType": "ml.m4.xlarge"
+                            },
+                            "TransformJobName.$": "$.tansform_para.job_name"
+          
+                            
+                        },
+                        "Type": "Task",
+                        "ResultPath": "$.tansform_results",
+                        "Next": "Post - Processing Step choice step"
+                    },
+                    "SageMaker -Endpoint Config step choice step": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.create_endpoint_config",
+                                "StringEquals": "Y",
+                                "Next": "SageMaker - Endpoint Config"
+                            }
+                        ],
+                        "Default": "Post - Processing Step choice step"
+                    },
+                    "SageMaker - Endpoint Config": {
+                        "Resource": "arn:aws:states:::sagemaker:createEndpointConfig",
+                        "Parameters": {
+                            "EndpointConfigName.$": "$.config_para.config_name",
+                            "ProductionVariants": [
+                                {
+                                    "InitialInstanceCount": 1,
+                                    "InitialVariantWeight": 1,
+                                    "InstanceType": "ml.t2.medium",
+                                    "ModelName.$": "$.model_para.model_name",
+                                    "VariantName": "AllTraffic"
+                                }
+                            ]                                                 
+                        },
+                        "Type": "Task",
+                        "ResultPath": "$.config_results",
+                        "Next": "SageMaker -Create Endpoint step choice step"
+                    },
+                    "SageMaker -Create Endpoint step choice step": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.create_endpoint",
+                                "StringEquals": "Y",
+                                "Next": "SageMaker - Create Endpoint"
+                            }
+                        ],
+                        "Default": "Post - Processing Step choice step"
+                    },
+                    "SageMaker - Create Endpoint": {
+                        "Resource": "arn:aws:states:::sagemaker:createEndpoint",
+                        "Parameters": {
+ 
+                            "EndpointName.$": "$.endpoint_para.endpoint_name",
+                            "EndpointConfigName.$": "$.config_para.config_name"
+          
+                            
+                        },
+                        "Type": "Task",
+                        "ResultPath": "$.endpoint_results",
+                        "Next": "Post - Processing Step choice step"
+                    },
+                    "Post - Processing Step choice step": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.postprocessing_job",
+                                "StringEquals": "Y",
+                                "Next": "Post - Processing Step"
+                            }
+                        ],
+                        "Default": "Success SNS"
+                    },
+                    "Post - Processing Step": {
+                        "Type": "Task",
+                        "ResultPath": null,
+                        "Next": "Success SNS",
+                        "Resource": "arn:aws:states:::sagemaker:createProcessingJob.sync",
+                        "Parameters": {
+                            "ProcessingJobName.$": "$.preprocessing.job_name",
+                     
+                            "ProcessingInputs": [
+                                {
+                                    "InputName": "code",
+                                    "AppManaged": false,
+                                    "S3Input": {
+                                        "S3Uri.$": "$.preprocessing.source_code_path",
+                                        "LocalPath": "/opt/ml/processing/input/code",
+                                        "S3DataType": "S3Prefix",
+                                        "S3InputMode": "File",
+                                        "S3DataDistributionType": "FullyReplicated",
+                                        "S3CompressionType": "None"
+                                    }
+                                },
+                                {
+                                    "InputName": "entrypoint",
+                                    "AppManaged": false,
+                                    "S3Input": {
+                                        "S3Uri.$": "$.preprocessing.entrypoint_path",
+                                        "LocalPath": "/opt/ml/processing/input/entrypoint",
+                                        "S3DataType": "S3Prefix",
+                                        "S3InputMode": "File",
+                                        "S3DataDistributionType": "FullyReplicated",
+                                        "S3CompressionType": "None"
+                                    }
+                                }
+                            ],
+                            "ProcessingOutputConfig": {
+                                "Outputs": [
+                                    {
+                                        "OutputName": "train_data",
+                                        "AppManaged": false,
+                                        "S3Output": {
+                                            "S3Uri.$": "$.preprocessing.output_train_data_path",
+                                            "LocalPath": "/opt/ml/processing/train",
+                                            "S3UploadMode": "EndOfJob"
+                                        }
+                                    },
+                                    {
+                                        "OutputName": "test_data",
+                                        "AppManaged": false,
+                                        "S3Output": {
+                                            "S3Uri.$": "$.preprocessing.output_test_data_path",
+                                            "LocalPath": "/opt/ml/processing/test",
+                                            "S3UploadMode": "EndOfJob"
+                                        }
+                                    },
+                                    {
+                                        "OutputName": "result_data",
+                                        "AppManaged": false,
+                                        "S3Output": {
+                                            "S3Uri.$": "$.preprocessing.output_result_data_path",
+                                            "LocalPath": "/opt/ml/processing/output",
+                                            "S3UploadMode": "EndOfJob"
+                                        }
+                                    }
+                                ]
+                            },
+                            "AppSpecification": {
+                                "ImageUri.$": "$.preprocessing.image_url",
+                                "ContainerArguments.$": "$.preprocessing.container_argument",
+                                "ContainerEntrypoint.$": "$.preprocessing.container_entrypoint"
+                            },
+                            "RoleArn.$": "$.sagemaker_role_arn",
+                            "ProcessingResources": {
+                                "ClusterConfig": {
+                                    "InstanceCount": 1,
+                                    "InstanceType.$": "$.preprocessing.instance_type",
+                                    "VolumeSizeInGB": 30
+                                }
+                            },
+                            "StoppingCondition": {
+                                "MaxRuntimeInSeconds": 7200
+                            }
+                        }
+                    },
+                    "Success SNS": {
+                        "Type": "Pass",
+                        "End": true
+                    }
+                }
+            }
+          ],
+            "Catch": [{
+                "ErrorEquals": [
+                    "States.ALL"
+                ],
+                "ResultPath": "$.error",
+                "Next": "Failed SNS"
+            }],
+            "Next": "Done"
+        },
+        "Done": {
+            "Type": "Succeed"
+        },
+        "Failed SNS": {
+            "Type": "Pass",
+            "Next": "Failed"
+        },
+        "Failed": {
+            "Type": "Fail"
+        }
+    }
+}
+ 

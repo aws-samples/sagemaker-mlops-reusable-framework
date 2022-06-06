@@ -1,0 +1,301 @@
+{
+    "name": {
+        "S": "demo-dev-domain-cal-house-price"
+    },
+    "acc_id": {
+        "S": "<your id>"
+    },
+    "app": {
+        "S": "/var/lang"
+    },
+    "dataset_date": {
+        "S": "2022-05-23"
+    },
+    "env": {
+        "S": "dev"
+    },
+    "event_source": {
+        "S": "manual"
+    },
+    "pipeline_stage": {
+        "S": "stepfunc"
+    },
+    "postprocessing_job": {
+        "S": "N"
+    },
+    "preprocessing": {
+        "M": {
+            "container_argument": {
+                "L": [{
+                        "S": "--prefix"
+                    },
+                    {
+                        "S": "terraform-demo/sklearn-dataset"
+                    },
+                    {
+                        "S": "--bucket"
+                    },
+                    {
+                        "S": "<your bucket>"
+                    }
+                ]
+            },
+            "container_entrypoint": {
+                "L": [{
+                        "S": "/bin/bash"
+                    },
+                    {
+                        "S": "/opt/ml/processing/input/code/bash_script.sh"
+                    }
+                ]
+            },
+            "entrypoint_path": {
+                "S": "s3://<your bucket>/terraform-demo/stepfunc/input/"
+            },
+            "image_url": {
+                "S": "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3"
+            },
+            "instance_type": {
+                "S": "ml.m5.xlarge"
+            },
+            "job_name": {
+                "S": "proc-job"
+            },
+            "job_type": {
+                "S": "sagemaker-processing"
+            },
+            "output_result_data_path": {
+                "S": "s3://<your bucket>/terraform-demo/preprocessing/output/result_data/"
+            },
+            "output_test_data_path": {
+                "S": "s3://<your bucket>/terraform-demo/sklearn-dataset/test/"
+            },
+            "output_train_data_path": {
+                "S": "s3://<your bucket>/terraform-demo/sklearn-dataset/train/"
+            },
+            "source_code_path": {
+                "S": "s3://<your bucket>/terraform-demo/stepfunc/input/"
+            }
+        }
+    },
+    "project": {
+        "S": "card-cross"
+    },
+    "region": {
+        "S": "us-east-1"
+    },
+    "sagemaker_role_arn": {
+        "S": "arn:aws:iam::<your id>:role/service-role/tf-sagemaker-role-dev-2"
+    },
+    "state_machine_name": {
+        "S": "demo-dev-ml-train-pipeline-common2"
+    },
+    "training_job": {
+        "S": "Y"
+    },
+    "training": {
+        "M": {
+            "hyperparameters": {
+                "M": {
+                    "features": {
+                        "S": "MedInc HouseAge AveRooms AveBedrms Population AveOccup Latitude Longitude"
+                    },
+                    "n_estimators": {
+                        "S": "300"
+                    },
+                    "sagemaker_program": {
+                        "S": "script.py"
+                    },
+                    "sagemaker_submit_directory": {
+                        "S": "s3://<your bucket>/terraform-demo/stepfunc/input/source.tar.gz"
+                    },
+                    "min_samples_leaf": {
+                        "S": "3"
+                    },
+                    "target": {
+                        "S": "target"
+                    }
+                }
+            },
+            "output_path": {
+                "S": "s3://<your bucket>/terraform-demo/training/output/"
+            },
+            "job_name": {
+                "S": "training-job-2022-06-01-b72a3a9d"
+            },
+            "instance_type": {
+                "S": "ml.m5.xlarge"
+            },
+            "image_url": {
+                "S": "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3"
+            },
+            "metricdefinitions": {
+                "L": [{
+                    "M": {
+                        "Regex": {
+                            "S": "AE-at-50th-percentile: ([0-9.]+).*$"
+                        },
+                        "Name": {
+                            "S": "median-AE"
+                        }
+                    }
+                }]
+            }
+        }
+    },
+    "tuning_job": {
+        "S": "N"
+    },
+    "tuning": {
+        "M": {
+            "statichyperparameters": {
+                "M": {
+                    "features": {
+                        "S": "MedInc HouseAge AveRooms AveBedrms Population AveOccup Latitude Longitude"
+                    },
+                    "sagemaker_container_log_level": {
+                        "S": "20"
+                    },
+                    "sagemaker_estimator_class_name": {
+                        "S": "SKLearn"
+                    },
+                    "sagemaker_program": {
+                        "S": "script.py"
+                    },
+                    "sagemaker_submit_directory": {
+                        "S": "s3://<your bucket>/terraform-demo/stepfunc/input/source.tar.gz"
+                    },
+                    "sagemaker_estimator_module": {
+                        "S": "sagemaker.sklearn.estimator"
+                    },
+                    "target": {
+                        "S": "target"
+                    }
+                }
+            },
+            "parameterranges": {
+                "M": {
+                    "ContinuousParameterRanges": {
+                        "L": []
+                    },
+                    "IntegerParameterRanges": {
+                        "L": [{
+                                "M": {
+                                    "MinValue": {
+                                        "S": "20"
+                                    },
+                                    "MaxValue": {
+                                        "S": "100"
+                                    },
+                                    "Name": {
+                                        "S": "n_estimators"
+                                    }
+                                }
+                            },
+                            {
+                                "M": {
+                                    "MinValue": {
+                                        "S": "2"
+                                    },
+                                    "MaxValue": {
+                                        "S": "6"
+                                    },
+                                    "Name": {
+                                        "S": "min-samples-leaf"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "CategoricalParameterRanges": {
+                        "L": []
+                    }
+                }
+            },
+            "job_name": {
+                "S": "tuning-job-2022-06-01-b72a3a9d"
+            },
+            "hyperparametejobobjective": {
+                "M": {
+                    "MetricName": {
+                        "S": "MAE"
+                    },
+                    "Type": {
+                        "S": "Minimize"
+                    }
+                }
+            },
+            "output_path": {
+                "S": "s3://<your bucket>/terraform-demo/tuning/output/"
+            },
+            "instance_type": {
+                "S": "ml.m5.xlarge"
+            },
+            "metricdefinitions": {
+                "L": [{
+                    "M": {
+                        "Regex": {
+                            "S": "MAE: ([0-9.]+).*$"
+                        },
+                        "Name": {
+                            "S": "MAE"
+                        }
+                    }
+                }]
+            }
+        }
+    },
+    "create_model": {
+        "S": "Y"
+    },
+    "model_para": {
+        "M": {
+            "model_name": {
+                "S": "rc-model"
+            },
+            "environment": {
+                "M": {
+                    "SAGEMAKER_SUBMIT_DIRECTORY": {
+                        "S": "s3://<your bucket>/terraform-demo/stepfunc/input/source.tar.gz"
+                    },
+                    "SAGEMAKER_PROGRAM": {
+                        "S": "script.py"
+                    }
+                }
+            }
+        }
+    },
+    "transform_job": {
+        "S": "N"
+    },
+    "transform_para": {
+        "M": {
+            "output": {
+                "S": "s3://<your bucket>/terraform-demo/transform/ouput/"
+            },
+            "job_name": {
+                "S": "transform-job"
+            }
+        }
+    },
+    "create_endpoint_config": {
+        "S": "Y"
+    },
+    "config_para": {
+        "M": {
+            "config_name": {
+                "S": "demo-config"
+            }
+        }
+    },
+    "create_endpoint": {
+        "S": "Y"
+    },
+    "endpoint_para": {
+        "M": {
+            "endpoint_name": {
+                "S": "demo-endpoint"
+            }
+        }
+    }
+}
