@@ -1,8 +1,12 @@
 # Build a Reusable MLOps Framework for Amazon SageMaker Using AWS Step Functions, Amazon DynamoDB and Terraform
-
-[AWS Step Functions](https://aws.amazon.com/step-functions/?step-functions.sort-by=item.additionalFields.postDateTime&step-functions.sort-order=desc) is a visual workflow service that developers can use to build MLOps pipelines using AWS services. Step Functions manages failures, retries, parallelization, service integrations, and observability. It's ideal tool to orchestrate ML workflow on Amazon SageMaker. [Amazon SageMaker](https://aws.amazon.com/sagemaker/) is a fully managed machine learning (ML) platform, to build, train and deploy your ML applications. [Amazon DynamoDB](https://aws.amazon.com/dynamodb/)is a fully managed, serverless, key-value NoSQL database. Combining AWS Step Functions, Amazon DynamoDB, and [Amazon Lambda](https://aws.amazon.com/lambda/), we can build a Reusable MLOps Framework for Amazon SageMaker.  
+### Introduction
+[AWS Step Functions](https://aws.amazon.com/step-functions/?step-functions.sort-by=item.additionalFields.postDateTime&step-functions.sort-order=desc) is a visual workflow service that developers can use to build MLOps pipelines using AWS services. Step Functions manages failures, retries, parallelization, service integrations, and observability. It's ideal tool to orchestrate ML workflow on Amazon SageMaker. [Amazon SageMaker](https://aws.amazon.com/sagemaker/) is a fully managed machine learning (ML) platform, to build, train and deploy your ML applications. [Amazon DynamoDB](https://aws.amazon.com/dynamodb/) is a fully managed, serverless, key-value NoSQL database. Combining AWS Step Functions, Amazon DynamoDB, and [Amazon Lambda](https://aws.amazon.com/lambda/), we can build a Reusable MLOps Framework for Amazon SageMaker.  
 
 In this framework, [Gitlab](https://about.gitlab.com/) is used as vision control service and [Terraform Cloud](https://www.terraform.io/cloud-docs) is used as Infrastructure as code (IaC) tool. Terraform provisions AWS services.   
+
+----
+### Benefits  
+With this framework, users can set up the ML pipeline once and reuse it for different purposes.  This pipeline enables customers rapid delivery and configurable workflow. The automated pipeline accelerates ML model production.  It reduces the typical lifecycle significantly.
 
 ---
 ### Overview of solution  
