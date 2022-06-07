@@ -6,7 +6,7 @@ In this framework, [Gitlab](https://about.gitlab.com/) is used as vision control
 
 ----
 ### Benefits  
-With this framework, users can set up the ML pipeline once and reuse it for different purposes.  This pipeline enables customers rapid delivery and configurable workflow. The automated pipeline accelerates ML model production.  It reduces the typical lifecycle significantly.
+With this framework, users can set up the ML pipeline once and reuse it for different purposes. Each step of the workflow can be enabled or disabled. Parameters are stored in Amazon DynamoDB. This pipeline enables customers rapid delivery and configurable workflow. The automated pipeline accelerates ML model production.  It reduces the typical lifecycle significantly.
 
 ---
 ### Overview of solution  
