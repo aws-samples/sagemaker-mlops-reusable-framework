@@ -17,7 +17,7 @@ The MLOps Framework is illustrated as below:
 ---
 ### Walkthrough  
 
-The source code is store in Gitlab repo. Terraform is connected to Gitlab. Each time, you push code into the repo. It will trigger Terraform 'plan' and 'apply' commands. Terraform will update services on AWS cloud. 'sagemaker-artifacts' files are loaded to an [Amazon S3 bucket](https://aws.amazon.com/s3/). If there are new codes pushed to 'sagemaker-artifacts' folder, Terraform will load new codes to the S3 bucket.  
+The source code is stored in Gitlab repo. Terraform is connected to Gitlab. Each time, you push code into the repo. It will trigger Terraform 'plan' and 'apply' commands. Terraform will update services on AWS cloud. 'sagemaker-artifacts' files are loaded to an [Amazon S3 bucket](https://aws.amazon.com/s3/). If there are new codes pushed to 'sagemaker-artifacts' folder, Terraform will load new codes to the S3 bucket.  
 
 ```dotnetcli
 ├── sagemaker-artifacts
